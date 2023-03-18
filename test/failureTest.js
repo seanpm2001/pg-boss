@@ -208,4 +208,44 @@ describe('failure', function () {
 
     assert.strictEqual(called, true)
   })
+
+  it('failure via done() should pass error with circular payload to failed job', async function () {
+    const axios = require('axios')
+    const https = require('https')
+    const boss = this.test.boss = await helper.start(this.test.bossConfig)
+    const queue = this.test.bossConfig.schema
+
+    await boss.send(queue, null, { onComplete: true })
+
+    return new Promise((resolve) => {
+      boss.work(queue, async job => {
+        try {
+          await axios.request({
+            url: 'https://dev.example.com/abc',
+            method: 'POST',
+            timeout: 500,
+            httpsAgent: new https.Agent({
+              minVersion: 'TLSv1.2'
+            })
+          })
+          assert.fail('request succeeded unexpectedly')
+        } catch (error) {
+          console.log('caught error, marking job as done')
+
+          // test hangs here
+          await job.done(error)
+
+          console.log('fail complete')
+
+          const failedJob = await boss.fetchCompleted(queue)
+          assert.ok(failedJob !== null, 'failedJob is null')
+
+          assert.strictEqual(failedJob.data.state, 'failed')
+          assert.strictEqual(failedJob.data.response.message, error.message)
+
+          resolve()
+        }
+      })
+    })
+  })
 })

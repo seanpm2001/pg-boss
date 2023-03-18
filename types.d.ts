@@ -143,7 +143,7 @@ declare namespace PgBoss {
   }
 
   interface JobDoneCallback<T> {
-    (err?: Error | null, data?: T): void;
+    (err?: Error | null, data?: T): Promise<void>;
   }
 
   // source (for now): https://github.com/bendrucker/postgres-interval/blob/master/index.d.ts

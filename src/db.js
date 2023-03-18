@@ -25,7 +25,12 @@ class Db extends EventEmitter {
 
   async executeSql (text, values) {
     if (this.opened) {
-      return await this.pool.query(text, values)
+      try {
+        return await this.pool.query(text, values)
+      } catch (err) {
+        console.error(`executeSql: ${err}`)
+        throw err
+      }
     }
   }
 }
